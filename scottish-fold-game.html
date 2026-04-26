@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scottish Fold Mouse Hunt 🐱</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a0a2e;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    font-family: 'Georgia', serif;
+    cursor: none;
+    user-select: none;
+  }
+
+  #bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 80%, #2d1b4e 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, #1a2d4e 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, #0d1a2e 0%, #1a0a2e 100%);
+  }
+
+  #floor {
+    position: absolute;
+    bottom: 80px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #6b4c8a 20%, #a67bc8 50%, #6b4c8a 80%, transparent);
+    box-shadow: 0 0 20px #9b6bc8;
+  }
+
+  #ui {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 40px;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .ui-box {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 10px 24px;
+    color: #e8d5f5;
+    font-size: 28px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 20px #c89ef5;
+    backdrop-filter: blur(10px);
+  }
+
+  .ui-label {
+    font-size: 12px;
+    color: #9b7cc4;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  #canvas {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  #mouse {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 50;
+    filter: drop-shadow(0 0 10px rgba(255,200,100,0.7));
+  }
+
+  #paw {
+    position: fixed;
+    width: 80px;
+    height: 80px;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 200;
+  }
+
+  #catchflash {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--fx, 50%) var(--fy, 50%), rgba(255,220,100,0.4) 0%, transparent 60%);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 150;
+    transition: opacity 0.1s;
+  }
+
+  .deco {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.15;
+    font-size: 52px;
+  }
+
+  .feather {
+    position: absolute;
+    pointer-events: none;
+    animation: feather-float 4s ease-in-out infinite;
+    opacity: 0.3;
+    z-index: 20;
+    font-size: 44px;
+  }
+
+  @keyframes feather-float {
+    0%, 100% { transform: rotate(-20deg) translateY(0); }
+    33% { transform: rotate(20deg) translateY(-30px); }
+    66% { transform: rotate(-10deg) translateY(-15px); }
+  }
+
+  .score-pop {
+    position: absolute;
+    color: #ffd700;
+    font-size: 40px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 180;
+    text-shadow: 0 0 15px #ffaa00;
+    animation: pop-up 1s ease-out forwards;
+  }
+
+  @keyframes pop-up {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-100px) scale(1.6); }
+  }
+
+  #titlescreen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    background: rgba(10, 5, 20, 0.88);
+    backdrop-filter: blur(6px);
+  }
+
+  #titlescreen h1 {
+    font-size: 90px;
+    color: #e8d5f5;
+    text-shadow: 0 0 40px #c89ef5, 0 0 80px #9b6bc4;
+    letter-spacing: 6px;
+    margin-bottom: 10px;
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  #titlescreen .subtitle {
+    font-size: 26px;
+    color: #9b7cc4;
+    letter-spacing: 10px;
+    margin-bottom: 50px;
+  }
+
+  #titlescreen .cat-art {
+    font-size: 130px;
+    margin-bottom: 30px;
+    animation: cat-bounce 1.5s ease-in-out infinite;
+    filter: drop-shadow(0 0 30px rgba(200,158,245,0.6));
+  }
+
+  #titlescreen .start-hint {
+    font-size: 24px;
+    color: #c89ef5;
+    letter-spacing: 6px;
+    animation: blink 1.5s step-end infinite;
+    margin-bottom: 20px;
+  }
+
+  #titlescreen .controls-hint {
+    font-size: 16px;
+    color: #6b4c8a;
+    letter-spacing: 3px;
+    margin-top: 10px;
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% { text-shadow: 0 0 40px #c89ef5, 0 0 80px #9b6bc4; }
+    50% { text-shadow: 0 0 70px #e8d5f5, 0 0 140px #c89ef5; }
+  }
+
+  @keyframes cat-bounce {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-25px) rotate(5deg); }
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .speed-line {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(255,200,100,0.7), transparent);
+    pointer-events: none;
+    z-index: 40;
+    animation: speed-fade 0.4s ease-out forwards;
+  }
+
+  @keyframes speed-fade {
+    from { opacity: 0.9; }
+    to { opacity: 0; }
+  }
+
+  #combo {
+    position: absolute;
+    top: 120px;
+    right: 40px;
+    color: #ffd700;
+    font-size: 24px;
+    letter-spacing: 3px;
+    text-shadow: 0 0 20px #ffaa00;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  #laser {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: radial-gradient(circle, #ff2222 0%, #ff000044 60%, transparent 100%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 60;
+    box-shadow: 0 0 20px #ff0000, 0 0 40px #ff000066;
+    display: none;
+  }
+
+  #mode-hint {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #6b4c8a;
+    font-size: 16px;
+    letter-spacing: 4px;
+    z-index: 100;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="bg"></div>
+<div class="deco" style="bottom:90px; left:5%;">🧶</div>
+<div class="deco" style="bottom:90px; right:8%;">🐾</div>
+<div class="deco" style="bottom:90px; left:45%;">🐟</div>
+<div class="feather" style="top:15%; left:10%;">🪶</div>
+<div class="feather" style="top:20%; right:12%; animation-delay:-2s;">🪶</div>
+
+<div id="floor"></div>
+<canvas id="canvas"></canvas>
+<div id="mouse"></div>
+<div id="laser"></div>
+<div id="paw"></div>
+<div id="catchflash"></div>
+
+<div id="ui">
+  <div class="ui-box">
+    <span class="ui-label">Caught</span>
+    <span id="score">0</span>
+  </div>
+  <div class="ui-box" style="text-align:center">
+    <span class="ui-label">Mode</span>
+    <span id="modename">🐭 MOUSE</span>
+  </div>
+  <div class="ui-box" style="text-align:right">
+    <span class="ui-label">Best</span>
+    <span id="hiscore">0</span>
+  </div>
+</div>
+<div id="combo"></div>
+<div id="mode-hint">M = SWITCH MODE &nbsp;|&nbsp; ARROWS + ENTER FOR TV REMOTE</div>
+
+<div id="titlescreen">
+  <div class="cat-art">🐱</div>
+  <h1>MOUSE HUNT</h1>
+  <div class="subtitle">SCOTTISH FOLD EDITION</div>
+  <div class="start-hint">TAP ANYWHERE TO PLAY</div>
+  <div class="controls-hint">TV: OK BUTTON TO START · ARROWS TO MOVE · OK TO CATCH · M TO SWITCH MODE</div>
+</div>
+
+<script>
+const W = () => window.innerWidth;
+const H = () => window.innerHeight;
+
+let score = 0, hiScore = 0, combo = 0, comboTimer = null;
+let gameActive = false;
+let mode = 'mouse';
+let modeTimer = null;
+const target = { x: 400, y: 300 };
+const vel = { x: 3, y: 2 };
+let speed = 4;
+let dashTimer = null;
+let prevX = 400;
+const paw = { x: -200, y: -200 };
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const particles = [];
+
+function resize() { canvas.width = W(); canvas.height = H(); }
+resize();
+window.addEventListener('resize', resize);
+
+const mouseEl = document.getElementById('mouse');
+const laserEl = document.getElementById('laser');
+const pawEl = document.getElementById('paw');
+
+function makeMousySVG(facingLeft) {
+  const fl = facingLeft ? 'transform="scale(-1,1) translate(-70,0)"' : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 70" ${fl}>
+    <path d="M6 42 Q-8 24 4 12" stroke="#d4a0c8" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="35" cy="46" rx="22" ry="16" fill="#c8a0d8"/>
+    <circle cx="50" cy="34" r="15" fill="#d4b0e0"/>
+    <polygon points="42,19 38,10 47,15" fill="#e8c0f0"/>
+    <polygon points="58,19 62,10 54,15" fill="#e8c0f0"/>
+    <polygon points="42.5,18 39,12 46,15" fill="#f5a0c8"/>
+    <polygon points="57.5,18 61,12 55,15" fill="#f5a0c8"/>
+    <circle cx="46" cy="34" r="4.5" fill="#1a0a2e"/>
+    <circle cx="55" cy="34" r="4.5" fill="#1a0a2e"/>
+    <circle cx="47" cy="33" r="1.8" fill="white"/>
+    <circle cx="56" cy="33" r="1.8" fill="white"/>
+    <line x1="64" y1="31" x2="73" y2="29" stroke="#c0a0d0" stroke-width="1.2"/>
+    <line x1="64" y1="34" x2="74" y2="34" stroke="#c0a0d0" stroke-width="1.2"/>
+    <line x1="64" y1="37" x2="73" y2="39" stroke="#c0a0d0" stroke-width="1.2"/>
+    <ellipse cx="63" cy="35" rx="2.5" ry="2" fill="#f5a0c8"/>
+    <ellipse cx="26" cy="60" rx="8" ry="5" fill="#b890c8"/>
+    <ellipse cx="42" cy="60" rx="8" ry="5" fill="#b890c8"/>
+  </svg>`;
+}
+
+function makeFishSVG() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 60">
+    <path d="M18,30 Q5,12 0,30 Q5,48 18,30" fill="#4488ff"/>
+    <ellipse cx="48" cy="30" rx="32" ry="18" fill="#66aaff"/>
+    <path d="M17,30 Q32,14 68,21 Q80,26 86,30 Q80,34 68,39 Q32,46 17,30Z" fill="#99ccff"/>
+    <circle cx="75" cy="26" r="5" fill="#1a1a4e"/>
+    <circle cx="76" cy="25" r="2" fill="white"/>
+    <path d="M68,21 Q74,16 82,19" stroke="#4488ff" stroke-width="2" fill="none"/>
+    <path d="M68,39 Q74,44 82,41" stroke="#4488ff" stroke-width="2" fill="none"/>
+    <path d="M34,14 Q37,9 42,14" stroke="#bbdeff" stroke-width="2" fill="none"/>
+    <path d="M48,12 Q51,7 56,12" stroke="#bbdeff" stroke-width="2" fill="none"/>
+  </svg>`;
+}
+
+function makePawSVG(pressed) {
+  const c = pressed ? '#ff8888' : '#ffccaa';
+  const p = pressed ? '#ee5555' : '#ff9999';
+  const claws = pressed ? `
+    <line x1="22" y1="12" x2="17" y2="2" stroke="#cc4444" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="40" y1="8" x2="40" y2="-2" stroke="#cc4444" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="58" y1="12" x2="63" y2="2" stroke="#cc4444" stroke-width="2.5" stroke-linecap="round"/>
+  ` : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+    <ellipse cx="22" cy="20" rx="10" ry="12" fill="${c}" opacity="0.92"/>
+    <ellipse cx="40" cy="14" rx="10" ry="12" fill="${c}" opacity="0.92"/>
+    <ellipse cx="58" cy="20" rx="10" ry="12" fill="${c}" opacity="0.92"/>
+    <ellipse cx="40" cy="50" rx="24" ry="26" fill="${c}" opacity="0.92"/>
+    <ellipse cx="40" cy="52" rx="14" ry="15" fill="${p}" opacity="0.7"/>
+    ${claws}
+  </svg>`;
+}
+
+function moveTarget() {
+  if (!gameActive) return;
+  if (mode === 'laser') {
+    vel.x += (Math.random() - 0.5) * 2.5;
+    vel.y += (Math.random() - 0.5) * 2.5;
+    const s = Math.hypot(vel.x, vel.y);
+    const sp = speed * 1.6;
+    vel.x = vel.x / s * sp;
+    vel.y = vel.y / s * sp;
+  } else {
+    if (!dashTimer && Math.random() < 0.008) {
+      const angle = Math.random() * Math.PI * 2;
+      vel.x = Math.cos(angle) * speed * 3.5;
+      vel.y = Math.sin(angle) * speed * 3.5;
+      spawnSpeedLines(target.x, target.y, angle);
+      dashTimer = setTimeout(() => { dashTimer = null; }, 600);
+    } else if (!dashTimer) {
+      vel.x += (Math.random() - 0.5) * 0.9;
+      vel.y += (Math.random() - 0.5) * 0.9;
+      if (Math.random() < 0.015) {
+        vel.x += (paw.x - target.x) * 0.01;
+        vel.y += (paw.y - target.y) * 0.01;
+      }
+      const s = Math.hypot(vel.x, vel.y);
+      if (s > speed) { vel.x = vel.x/s*speed; vel.y = vel.y/s*speed; }
+    }
+  }
+
+  target.x += vel.x;
+  target.y += vel.y;
+
+  const margin = 50;
+  const floorY = H() - 100;
+  if (target.x < margin) { target.x = margin; vel.x = Math.abs(vel.x); }
+  if (target.x > W()-margin) { target.x = W()-margin; vel.x = -Math.abs(vel.x); }
+  if (target.y < 90) { target.y = 90; vel.y = Math.abs(vel.y); }
+  if (target.y > floorY) { target.y = floorY; vel.y = -Math.abs(vel.y); }
+
+  const dx = target.x - paw.x;
+  const dy = target.y - paw.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 160 && dist > 1) {
+    vel.x += (dx/dist) * 1.8;
+    vel.y += (dy/dist) * 1.8;
+  }
+
+  if (mode === 'laser') {
+    laserEl.style.left = (target.x - 12) + 'px';
+    laserEl.style.top = (target.y - 12) + 'px';
+  } else {
+    const facingLeft = target.x < prevX;
+    mouseEl.innerHTML = mode === 'fish' ? makeFishSVG() : makeMousySVG(facingLeft);
+    mouseEl.style.left = target.x + 'px';
+    mouseEl.style.top = target.y + 'px';
+  }
+  prevX = target.x;
+}
+
+function spawnSpeedLines(x, y, angle) {
+  for (let i = 0; i < 6; i++) {
+    const line = document.createElement('div');
+    line.className = 'speed-line';
+    const len = 40 + Math.random() * 70;
+    line.style.width = len + 'px';
+    line.style.left = (x - len) + 'px';
+    line.style.top = (y + (Math.random()-0.5)*40) + 'px';
+    line.style.transform = `rotate(${angle * 180/Math.PI}deg)`;
+    document.body.appendChild(line);
+    setTimeout(() => line.remove(), 400);
+  }
+}
+
+function spawnCatchParticles(x, y) {
+  for (let i = 0; i < 24; i++) {
+    const angle = (i / 24) * Math.PI * 2;
+    const sp = 3 + Math.random() * 8;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * sp,
+      vy: Math.sin(angle) * sp,
+      life: 1,
+      size: 4 + Math.random() * 7,
+      color: ['#ffd700','#ff8888','#88ffcc','#ffaa44','#ffffff','#ff88ff'][Math.floor(Math.random()*6)]
+    });
+  }
+  for (let i = 0; i < 10; i++) {
+    particles.push({
+      x: x + (Math.random()-0.5)*100,
+      y: y + (Math.random()-0.5)*100,
+      vx: (Math.random()-0.5) * 2,
+      vy: -2 - Math.random() * 4,
+      life: 1,
+      size: 10 + Math.random() * 12,
+      color: '#ffd700',
+      star: true
+    });
+  }
+}
+
+function drawParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.18;
+    p.life -= 0.022;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    if (p.star) {
+      ctx.font = p.size + 'px serif';
+      ctx.fillText('⭐', p.x, p.y);
+    } else {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function checkCatch(tapX, tapY) {
+  const dx = tapX - target.x;
+  const dy = tapY - target.y;
+  const dist = Math.hypot(dx, dy);
+  const hitRadius = mode === 'laser' ? 45 : 65;
+  if (dist < hitRadius) {
+    combo++;
+    const pts = combo >= 3 ? combo : 1;
+    score += pts;
+    hiScore = Math.max(hiScore, score);
+    document.getElementById('score').textContent = score;
+    document.getElementById('hiscore').textContent = hiScore;
+    if (combo >= 2) {
+      const c = document.getElementById('combo');
+      c.textContent = combo + '× COMBO! +' + pts;
+      c.style.opacity = 1;
+      if (comboTimer) clearTimeout(comboTimer);
+      comboTimer = setTimeout(() => { c.style.opacity = 0; combo = 0; }, 1800);
+    }
+    const flash = document.getElementById('catchflash');
+    flash.style.setProperty('--fx', (tapX/W()*100)+'%');
+    flash.style.setProperty('--fy', (tapY/H()*100)+'%');
+    flash.style.opacity = 1;
+    setTimeout(() => flash.style.opacity = 0, 150);
+    spawnCatchParticles(tapX, tapY);
+    const pop = document.createElement('div');
+    pop.className = 'score-pop';
+    pop.textContent = pts > 1 ? '+'+pts+' 🔥' : '+1 ⭐';
+    pop.style.left = (tapX - 40) + 'px';
+    pop.style.top = (tapY - 50) + 'px';
+    document.body.appendChild(pop);
+    setTimeout(() => pop.remove(), 1000);
+    pawEl.innerHTML = makePawSVG(true);
+    setTimeout(() => pawEl.innerHTML = makePawSVG(false), 220);
+    const escAngle = Math.atan2(dy, dx) + Math.PI + (Math.random()-0.5)*0.8;
+    vel.x = Math.cos(escAngle) * speed * 4.5;
+    vel.y = Math.sin(escAngle) * speed * 4.5;
+    speed = Math.min(9, speed + 0.25);
+    return true;
+  }
+  return false;
+}
+
+const modes = ['mouse','laser','fish'];
+let modeIdx = 0;
+
+function nextMode() {
+  modeIdx = (modeIdx + 1) % modes.length;
+  mode = modes[modeIdx];
+  const names = { mouse:'🐭 MOUSE', laser:'🔴 LASER', fish:'🐟 FISH' };
+  document.getElementById('modename').textContent = names[mode];
+  mouseEl.style.display = mode !== 'laser' ? 'block' : 'none';
+  laserEl.style.display = mode === 'laser' ? 'block' : 'none';
+  clearTimeout(modeTimer);
+  modeTimer = setTimeout(() => {
+    modeIdx = 0; mode = 'mouse';
+    document.getElementById('modename').textContent = '🐭 MOUSE';
+    mouseEl.style.display = 'block';
+    laserEl.style.display = 'none';
+  }, 25000);
+}
+
+setInterval(() => { if (gameActive && Math.random() < 0.4) nextMode(); }, 35000);
+
+function handleInput(x, y) {
+  if (!gameActive) { startGame(); return; }
+  checkCatch(x, y);
+}
+
+document.addEventListener('click', e => handleInput(e.clientX, e.clientY));
+document.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  handleInput(t.clientX, t.clientY);
+}, { passive: false });
+
+document.addEventListener('mousemove', e => {
+  paw.x = e.clientX; paw.y = e.clientY;
+  pawEl.style.left = e.clientX + 'px';
+  pawEl.style.top = e.clientY + 'px';
+});
+
+document.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  paw.x = t.clientX; paw.y = t.clientY;
+  pawEl.style.left = t.clientX + 'px';
+  pawEl.style.top = t.clientY + 'px';
+}, { passive: false });
+
+document.addEventListener('keydown', e => {
+  if (!gameActive && (e.key === 'Enter' || e.key === ' ')) { startGame(); return; }
+  if (e.key === 'm' || e.key === 'M') { nextMode(); return; }
+  const step = 50;
+  if (e.key === 'ArrowLeft')  { paw.x = Math.max(0, paw.x - step); pawEl.style.left = paw.x + 'px'; }
+  if (e.key === 'ArrowRight') { paw.x = Math.min(W(), paw.x + step); pawEl.style.left = paw.x + 'px'; }
+  if (e.key === 'ArrowUp')    { paw.y = Math.max(0, paw.y - step); pawEl.style.top  = paw.y + 'px'; }
+  if (e.key === 'ArrowDown')  { paw.y = Math.min(H(), paw.y + step); pawEl.style.top  = paw.y + 'px'; }
+  if (e.key === 'Enter')      { if (gameActive) checkCatch(paw.x, paw.y); }
+  e.preventDefault();
+});
+
+function gameLoop() {
+  moveTarget();
+  drawParticles();
+  requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+  document.getElementById('titlescreen').style.display = 'none';
+  gameActive = true;
+  score = 0; combo = 0; speed = 4;
+  document.getElementById('score').textContent = '0';
+  target.x = W()/2; target.y = H()/2;
+  vel.x = 3 + Math.random()*2;
+  vel.y = 2 + Math.random()*2;
+  mouseEl.innerHTML = makeMousySVG(false);
+  mouseEl.style.display = 'block';
+  pawEl.innerHTML = makePawSVG(false);
+  paw.x = W()/2; paw.y = H()/2;
+  pawEl.style.left = paw.x + 'px';
+  pawEl.style.top = paw.y + 'px';
+}
+
+pawEl.innerHTML = makePawSVG(false);
+mouseEl.innerHTML = makeMousySVG(false);
+mouseEl.style.display = 'block';
+gameLoop();
+</script>
+</body>
+</html>
